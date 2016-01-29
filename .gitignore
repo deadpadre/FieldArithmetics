@@ -1,0 +1,10 @@
+# ignore executables
+*.out
+
+# ignore timetest
+timetest.cpp
+
+# ignore environment files
+*.gch
+.DS_Store
+
