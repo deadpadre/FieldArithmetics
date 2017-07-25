@@ -22,8 +22,8 @@ public:
 };
 
 int main() {
-	AdditiveElement<ResidualGroup<9> > a(5);
-	AdditiveElement<ResidualGroup<9> > b(6);
+	Element<ResidualGroup<9> > a(5);
+	Element<ResidualGroup<9> > b(6);
 	std::cout << a << std::endl;
 	std::cout << b << std::endl;
 	std::cout << a + b << std::endl;
