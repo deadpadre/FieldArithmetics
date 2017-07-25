@@ -1,33 +1,23 @@
 #include <iostream>
 #include <exception>
 #include "Basic.h"
+#include "PrimeField.h"
 
-template<size_t SIZE>
-class ResidualGroup : public Group {
-public:
-
-	// Inherited via Group
-	virtual size_t op(size_t lhs, size_t rhs) const override {
-		return (lhs + rhs) % SIZE;
-	}
-	virtual size_t getInverse(size_t index) const override {
-		return (SIZE - index) % SIZE;
-	}
-	virtual size_t getSize() const override {
-		return SIZE;
-	}
-	virtual size_t getNeutral() const override {
-		return 0;
-	}
-};
 
 int main() {
-	Element<ResidualGroup<9> > a(5);
-	Element<ResidualGroup<9> > b(6);
-	std::cout << a << std::endl;
-	std::cout << b << std::endl;
-	std::cout << a + b << std::endl;
-	std::cout << (a + b).getInverse() << std::endl;
-	
+	//Element<Additive<ResidualGroup<9> > > a(5);
+	//Element<Additive<ResidualGroup<9> > > b(6);
+	try {
+		Element<PrimeField<7> > a(5);
+		Element<PrimeField<7> > b(6);
+		std::cout << a << std::endl;
+		std::cout << b << std::endl;
+		std::cout << a + b << std::endl;
+		std::cout << a * b << std::endl;
+		std::cout << a / (b * a) << std::endl;
+	} catch (std::exception &e) {
+		std::cout << e.what() << std::endl;
+	}
+
 	return 0;
 }
