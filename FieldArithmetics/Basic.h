@@ -4,17 +4,23 @@
 //-------------------------------
 // Semigroup and Group
 
+template<typename ID = size_t>
 class Semigroup {
 public:
 	virtual size_t getSize() const = 0;
 	virtual ~Semigroup() {};
-	virtual size_t op(size_t lhs, size_t rhs) const = 0;
+	virtual ID op(const ID& lhs, const ID& rhs) const = 0;
+
+	typedef ID IDType;
 };
 
-class Group: public Semigroup {
+template<typename ID = size_t>
+class Group: public Semigroup<ID> {
 public:
-	virtual size_t getInverse(size_t index) const = 0;
-	virtual size_t getNeutral() const = 0;
+	virtual ID getInverse(const ID& index) const = 0;
+	virtual ID getNeutral() const = 0;
+
+	typedef ID IDType;
 };
 
 // factory constructing singleton objects
@@ -33,58 +39,62 @@ public:
 
 template<typename Container>
 class Multiplicative: public Container {
-	size_t op(size_t lhs, size_t rhs) const override {
+public:
+	typedef typename Container::IDType IDType;
+private:
+	IDType op(const IDType& lhs, const IDType& rhs) const override {
 		return multiply(lhs, rhs);
 	}
-	size_t getInverse(size_t index) const override {
+	IDType getInverse(const IDType& index) const override {
 		return getReciprocal(index);
 	}
-	size_t getNeutral() const override {
+	IDType getNeutral() const override {
 		return getIdentity();
 	}
 
 public:
-	static size_t mulOp(size_t lhs, size_t rhs) {
-		return ContainerBuilder<Multiplicative<Container> >::getContainer().op(lhs, rhs);
-	}
-	virtual size_t multiply(size_t lhs, size_t rhs) const {
+	virtual IDType multiply(const IDType& lhs, const IDType& rhs) const {
 		return Container::op(lhs, rhs);
 	}
-	virtual size_t getReciprocal(size_t index) const {
+	virtual IDType getReciprocal(const IDType& index) const {
 		return Container::getInverse(index);
 	}
-	virtual size_t getIdentity() const {
+	virtual IDType getIdentity() const {
 		return Container::getNeutral();
 	}
-	typedef Multiplicative<Container> ContainerType;
+	virtual size_t getSize() const {
+		return Container::getSize();
+	}
 };
 
 template<typename Container>
 class Additive : public Container {
-	size_t op(size_t lhs, size_t rhs) const override {
-		return add(lhs, rhs);
+public:
+	typedef typename Container::IDType IDType;
+private:
+	IDType op(const IDType& lhs, const IDType& rhs) const override {
+		return this->add(lhs, rhs);
 	}
-	size_t getInverse(size_t index) const override {
-		return getNegative(index);
+	IDType getInverse(const IDType& index) const override {
+		return this->getNegative(index);
 	}
-	size_t getNeutral() const override {
-		return getZero();
+	IDType getNeutral() const override {
+		return this->getZero();
 	}
 
 public:
-	static size_t addOp(size_t lhs, size_t rhs) {
-		return ContainerBuilder<Additive<Container> >::getContainer().op(lhs, rhs);
-	}
-	virtual size_t add(size_t lhs, size_t rhs) const {
+	virtual IDType add(const IDType& lhs, const IDType& rhs) const {
 		return Container::op(lhs, rhs);
 	}
-	virtual size_t getNegative(size_t index) const {
+	virtual IDType getNegative(const IDType& index) const {
 		return Container::getInverse(index);
 	}
-	virtual size_t getZero() const {
+	virtual IDType getZero() const {
 		return Container::getNeutral();
 	}
-	typedef Additive<Container> ContainerType;
+	virtual size_t getSize() const {
+		return Container::getSize();
+	}
 };
 
 //---------------------------
@@ -93,26 +103,30 @@ public:
 template<typename MGroup, typename AGroup>
 class Field : public Multiplicative<MGroup>, public Additive<AGroup> {
 public:
+	typedef typename Additive<AGroup>::IDType IDType;
+	typedef MGroup	MultGroup;
+	typedef AGroup	AddGroup;
 	/* In order to manually set field ops, you can choose abstract Group class as
 	both template parameters and override these methods
 		Other option is to inherit from proper groups.
 
-	virtual size_t multiply(size_t lhs, size_t rhs);
-	virtual size_t getReciprocal(size_t index);
-	virtual size_t getIdentity();
+	virtual IDType multiply(const IDType& lhs, const IDType& rhs);
+	virtual IDType getReciprocal(const IDType& index);
+	virtual IDType getIdentity();
 
-	virtual size_t add(size_t lhs, size_t rhs);
-	virtual size_t getNegative(size_t index);
-	virtual size_t getZero();
+	virtual IDType add(const IDType& lhs, const IDType& rhs);
+	virtual IDType getNegative(cosnt IDType& index);
+	virtual IDType getZero();
 
-	In case if you're inheriting from group, in order to use Element class,
-	you shold typedef type of your field into ContainerType
 	*/
 	size_t getSize() const {
 		return AGroup::getSize();
 	}
-	typedef Field<MGroup, AGroup> ContainerType;
 };
+
+// sustaining the difference between field and ring has been effectively layed upon users' shoulders
+template<typename MGroup, typename AGroup>
+using Ring = Field<MGroup, AGroup>;
 
 // dual opeartion wrappers are not present since
 // field is its own wrapper
@@ -120,48 +134,85 @@ public:
 //-----------------------------
 // Elements
 
-template<typename Wrapper>
-class Element {
-protected:
-	size_t id;
+template<typename Wrapper, typename Derived>
+class BaseElement {
 public:
-	Element() {}
-	Element(size_t _id) : id(_id) {}
-	size_t getId() const { return id; }
-	size_t getSize() const { return ContainerBuilder<Wrapper::ContainerType>::getContainer().getSize(); }
+	typedef typename Wrapper::IDType IDType;
+protected:
+	IDType id;
+	const Wrapper& container;
+public:
+	BaseElement() : id(), container(ContainerBuilder<Wrapper>::getContainer()) {}
+	BaseElement(const IDType& _id) : id(_id), container(ContainerBuilder<Wrapper>::getContainer()) {}
+	BaseElement(const BaseElement<Wrapper, Derived>& other) : id(other.id), container(other.container) {}
+	Derived& operator=(const BaseElement<Wrapper, Derived>& other) {
+		id = other.id;
+		return *static_cast<Derived*>(this);
+	}
+
+	IDType getId() const { return id; }
+	size_t getSize() const { return container.getSize(); }
 
 	// operations
-	Element<Wrapper>& operator*=(const Element<Wrapper>& other) {
-		id = Wrapper::mulOp(id, other.id);
-		return *this;
+	Derived& operator*=(const BaseElement<Wrapper, Derived>& other) {
+		id = container.multiply(id, other.id);
+		return *static_cast<Derived*>(this);
 	}
-	friend Element<Wrapper> operator*(Element<Wrapper> lhs, const Element<Wrapper>& rhs) {
-		return lhs *= rhs;
+	Derived& operator+=(const BaseElement<Wrapper, Derived>& other) {
+		id = container.add(id, other.id);
+		return *static_cast<Derived*>(this);
 	}
-	Element<Wrapper>& operator+=(const Element<Wrapper>& other) {
-		id = Wrapper::addOp(id, other.id);
-		return *this;
+	Derived& operator/=(const BaseElement<Wrapper, Derived>& other) {
+		id = container.multiply(id, container.getReciprocal(other.id));
+		return *static_cast<Derived*>(this);
 	}
-	friend Element<Wrapper> operator+(Element<Wrapper> lhs, const Element<Wrapper>& rhs) {
-		return lhs += rhs;
+	Derived& operator-=(const BaseElement<Wrapper, Derived>& other) {
+		id = container.add(id, container.getNegative(other.id));
+		return *static_cast<Derived*>(this);
 	}
-	Element<Wrapper>& operator/=(const Element<Wrapper>& other) {
-		id = Wrapper::mulOp(id, ContainerBuilder<Wrapper::ContainerType>::getContainer().getReciprocal(other.id));
-		return *this;
-	}
-	friend Element<Wrapper> operator/(Element<Wrapper> lhs, const Element<Wrapper>& rhs) {
-		return lhs /= rhs;
-	}
-	Element<Wrapper>& operator-=(const Element<Wrapper>& other) {
-		id = Wrapper::addOp(id, ContainerBuilder<Wrapper::ContainerType>::getContainer().getNegative(other.id));
-		return *this;
-	}
-	friend Element<Wrapper> operator-(Element<Wrapper> lhs, const Element<Wrapper>& rhs) {
-		return lhs -= rhs;
+	friend Derived operator*(BaseElement<Wrapper, Derived> lhs, const BaseElement<Wrapper, Derived>& rhs) { return lhs *= rhs; }
+	friend Derived operator+(BaseElement<Wrapper, Derived> lhs, const BaseElement<Wrapper, Derived>& rhs) { return lhs += rhs; }
+	friend Derived operator/(BaseElement<Wrapper, Derived> lhs, const BaseElement<Wrapper, Derived>& rhs) { return lhs /= rhs; }
+	friend Derived operator-(BaseElement<Wrapper, Derived> lhs, const BaseElement<Wrapper, Derived>& rhs) { return lhs -= rhs; }
+	Derived operator-() const {
+		return *static_cast<Derived*>(&(BaseElement<Wrapper, Derived>(container.getZero()) - *this));
 	}
 };
 
 template<typename Wrapper>
+class Element : public BaseElement<Wrapper, Element<Wrapper>> {
+public:
+	typedef typename Wrapper::IDType IDType;
+	Element() : BaseElement<Wrapper, Element<Wrapper>>() {}
+	Element(const IDType& _id) : BaseElement<Wrapper, Element<Wrapper>>(_id) {}
+	Element(const Element<Wrapper>& other) : BaseElement<Wrapper, Element<Wrapper>>(other) {}
+};
+
+template<typename Wrapper>
 std::ostream& operator<<(std::ostream& srm, const Element<Wrapper>& elem) {
-	return (srm << elem.getId() << " @ " << elem.getSize());
+	return (srm << "(" << elem.getId() << "#" << elem.getSize() << ")");
+}
+
+template<typename ID>
+inline size_t Semigroup<ID>::getSize() const
+{
+	return size_t();
+}
+
+template<typename ID>
+inline ID Semigroup<ID>::op(const ID & lhs, const ID & rhs) const
+{
+	return ID();
+}
+
+template<typename ID>
+inline ID Group<ID>::getInverse(const ID & index) const
+{
+	return ID();
+}
+
+template<typename ID>
+inline ID Group<ID>::getNeutral() const
+{
+	return ID();
 }

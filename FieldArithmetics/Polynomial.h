@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <ctime>
-#include "PrimeFieldElement.h"
+#include "PrimeField.h"
 
 template <typename FieldElement>
 class Polynomial {
@@ -210,16 +210,16 @@ std::ostream& operator<<(std::ostream &os, const Polynomial<FieldElement> &poly)
     return os;
 }
 
-int main() {
-    try {
-        srand(time(0));
-        PrimeFieldElement<7> a = 1;
-        PrimeFieldElement<7> b = 3;
-        std::cout << a + b << std::endl;
-    } catch (const std::exception &e) {
-        std::cout << e.what() << std::endl;
-    } catch (...) {
-        std::cout << "Unknown exception thrown" << std::endl;
-    }
-    return 0;
-}
+//int main() {
+//    try {
+//        srand(time(0));
+//        PrimeFieldElement<7> a = 1;
+//        PrimeFieldElement<7> b = 3;
+//        std::cout << a + b << std::endl;
+//    } catch (const std::exception &e) {
+//        std::cout << e.what() << std::endl;
+//    } catch (...) {
+//        std::cout << "Unknown exception thrown" << std::endl;
+//    }
+//    return 0;
+//}

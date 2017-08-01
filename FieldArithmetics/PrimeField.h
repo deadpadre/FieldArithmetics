@@ -3,14 +3,14 @@
 #include "Basic.h"
 
 template<size_t SIZE>
-class ResidualGroup : public Group {
+class ResidualGroup : public Group<> {
 public:
 
 	// Inherited via Group
-	virtual size_t op(size_t lhs, size_t rhs) const override {
+	virtual size_t op(const size_t& lhs, const size_t& rhs) const override {
 		return (lhs + rhs) % SIZE;
 	}
-	virtual size_t getInverse(size_t index) const override {
+	virtual size_t getInverse(const size_t& index) const override {
 		return (SIZE - index) % SIZE;
 	}
 	virtual size_t getSize() const override {
@@ -22,7 +22,7 @@ public:
 };
 
 template<size_t SIZE>
-class PrimeResidualMGroup : public Group {
+class PrimeResidualMGroup : public Group<> {
 
 	static bool isPrime(int a) {
 		if (a < 0) {
@@ -47,10 +47,10 @@ public:
 	}
 
 	// Inherited via Group
-	virtual size_t op(size_t lhs, size_t rhs) const override {
+	virtual size_t op(const size_t& lhs, const size_t& rhs) const override {
 		return (lhs * rhs) % SIZE;
 	}
-	virtual size_t getInverse(size_t index) const override {
+	virtual size_t getInverse(const size_t& index) const override {
 		if (index == 0) {
 			throw std::domain_error("Attempting to inverse the zero element");
 		}
